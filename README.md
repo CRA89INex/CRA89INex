@@ -6,6 +6,14 @@
 - 😄 Pronouns: He/him
 - ⚡ Fun fact: Failing upwards still feels terrifying at times. 
 
+---
+
+**Current project in this repo:** [Punkt — Intention Tracker (iOS)](./SETUP.md),
+a native SwiftUI/ActivityKit/WidgetKit app that helps keep declared
+intention and actual behavior in sync through gentle, irregular check-ins
+instead of blocking or gamification. See [`SETUP.md`](./SETUP.md) for the
+full architecture and setup steps.
+
 <!---
 CRA89INex/CRA89INex is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 You can click the Preview link to take a look at your changes.

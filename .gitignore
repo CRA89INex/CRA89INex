@@ -1,0 +1,11 @@
+# Xcode / XcodeGen — project.yml is the source of truth, the generated
+# .xcodeproj is regenerated locally via `xcodegen generate`.
+*.xcodeproj
+*.xcworkspace
+DerivedData/
+xcuserdata/
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
