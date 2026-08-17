@@ -27,7 +27,7 @@ targets:
         # commands produce ...framework" duplicate-embed error you get when
         # an app and its extension both embed the same dynamic framework.
         MACH_O_TYPE: staticlib
-        GENERATE_INFOPLIST_FILE: "YES"
+        GENERATE_INFOPLIST_FILE: YES
 
   IntentionCoreTests:
     type: bundle.unit-test
@@ -38,7 +38,7 @@ targets:
       - target: IntentionCore
     settings:
       base:
-        GENERATE_INFOPLIST_FILE: "YES"
+        GENERATE_INFOPLIST_FILE: YES
 
   Punkt:
     type: application
