@@ -110,6 +110,7 @@ schemes:
         IntentionCoreTests: [test]
     run:
       config: Debug
+      executable: Punkt
     test:
       config: Debug
       targets:

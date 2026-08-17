@@ -4,6 +4,7 @@ import IntentionCore
 /// The app is deliberately thin (§5.3): four screens, no more.
 struct RootView: View {
     @Environment(SessionStore.self) private var store
+    @Environment(FlowSessionStore.self) private var flowStore
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -21,26 +22,35 @@ struct RootView: View {
                 .tabItem { Label("Einstellungen", systemImage: "gearshape") }
         }
         .tint(PunktPalette.active)
-        .onAppear { store.refreshAfterForeground() }
+        .onAppear { refreshAfterForeground() }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
-                store.refreshAfterForeground()
+                refreshAfterForeground()
             }
         }
     }
+
+    private func refreshAfterForeground() {
+        store.refreshAfterForeground()
+        flowStore.refreshAfterForeground()
+    }
 }
 
-/// LEERLAUF vs. AKTIV router, with KORREKTUR / CHECK_IN / RÜCKKEHR_PROMPT
-/// layered as sheets driven purely by the engine's phase.
+/// LEERLAUF vs. AKTIV (intention or flow) router, with KORREKTUR /
+/// CHECK_IN / RÜCKKEHR_PROMPT layered as sheets driven purely by the
+/// engine's phase.
 private struct StartTabView: View {
     @Environment(SessionStore.self) private var store
+    @Environment(FlowSessionStore.self) private var flowStore
 
     var body: some View {
         Group {
-            if store.session == nil {
-                IntentionEntryView()
-            } else {
+            if flowStore.phase != .idle {
+                FlowSessionView()
+            } else if store.session != nil {
                 ActiveSessionView()
+            } else {
+                IntentionEntryView()
             }
         }
         .sheet(isPresented: isCheckIn) { CheckInPromptView() }

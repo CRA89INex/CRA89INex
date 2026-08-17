@@ -29,6 +29,10 @@ private struct SessionVisualizationView: View {
             VStack(spacing: 28) {
                 Spacer()
 
+                // Tap gesture is scoped to just the dot/ring — attaching it
+                // to the whole screen (as before) made it compete with the
+                // "Session beenden" button below for taps, and the button
+                // reliably lost, making it look unresponsive.
                 TimelineView(.periodic(from: session.startedAt, by: 1)) { context in
                     ZStack {
                         ProgressRingView(
@@ -47,6 +51,16 @@ private struct SessionVisualizationView: View {
                         BreathingDotView(color: dotColor)
                     }
                 }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if store.phase == .active {
+                        store.requestCorrection()
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(accessibilityDescription)
+                .accessibilityHint("Zum Innehalten tippen")
+                .accessibilityAddTraits(.isButton)
 
                 VStack(spacing: 6) {
                     Text(session.intentionText)
@@ -76,16 +90,6 @@ private struct SessionVisualizationView: View {
                 .padding(.bottom, 16)
             }
         }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if store.phase == .active {
-                store.requestCorrection()
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityDescription)
-        .accessibilityHint("Zum Innehalten tippen")
-        .accessibilityAddTraits(.isButton)
     }
 
     private var dotColor: Color {
