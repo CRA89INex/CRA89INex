@@ -5,10 +5,6 @@ options:
     iOS: "17.0"
   createIntermediateGroups: true
 
-packages:
-  IntentionCore:
-    path: .
-
 settings:
   base:
     SWIFT_VERSION: "5.9"
@@ -19,13 +15,34 @@ settings:
     CODE_SIGN_STYLE: Automatic
 
 targets:
+  IntentionCore:
+    type: framework
+    platform: iOS
+    sources:
+      - path: Sources/IntentionCore
+    settings:
+      base:
+        # Shared by both the app and the widget extension — built static so
+        # neither target needs to embed it, avoiding the classic "multiple
+        # commands produce ...framework" duplicate-embed error you get when
+        # an app and its extension both embed the same dynamic framework.
+        MACH_O_TYPE: staticlib
+
+  IntentionCoreTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/IntentionCoreTests
+    dependencies:
+      - target: IntentionCore
+
   Punkt:
     type: application
     platform: iOS
     sources:
       - path: App/Punkt
     dependencies:
-      - package: IntentionCore
+      - target: IntentionCore
       - target: PunktWidgetExtension
         embed: true
     entitlements:
@@ -56,7 +73,7 @@ targets:
     sources:
       - path: Widget/PunktWidget
     dependencies:
-      - package: IntentionCore
+      - target: IntentionCore
     entitlements:
       path: Widget/PunktWidget/PunktWidget.entitlements
       properties:
@@ -77,8 +94,10 @@ schemes:
   Punkt:
     build:
       targets:
+        IntentionCore: all
         Punkt: all
         PunktWidgetExtension: all
+        IntentionCoreTests: [test]
     run:
       config: Debug
     test:

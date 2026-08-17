@@ -26,16 +26,30 @@ Die fünf offenen Punkte aus der Spezifikation wurden wie folgt entschieden:
 ## Projektstruktur
 
 ```
-Package.swift              — SwiftPM: IntentionCore (App-unabhängiger Kern)
+Package.swift              — SwiftPM: IntentionCore, eigenständig testbar
+                               via `swift test` (unabhängig vom Xcode-Projekt)
 Sources/IntentionCore/      — Models (SwiftData), SessionEngine, Scheduling,
                                SharedState (App Group), Activity, Analytics
 Tests/IntentionCoreTests/   — Unit-Tests für SessionEngine, Interval-Policy,
                                PatternAnalyzer (reines XCTest, kein UI)
 App/Punkt/                  — SwiftUI-App (App-Target)
 Widget/PunktWidget/         — Widget-Extension: Home-Screen-Widget + Live Activity
-project.yml                 — XcodeGen-Spezifikation für App-Target,
-                               Widget-Extension und das lokale Package
+project.yml                 — XcodeGen-Spezifikation: kompiliert Sources/IntentionCore
+                               als eigenes Framework-Target (statisch gelinkt),
+                               plus App-Target, Widget-Extension und
+                               IntentionCoreTests
 ```
+
+`IntentionCore` existiert damit über zwei unabhängige Wege: als SwiftPM-Package
+(`Package.swift`, für schnelles `swift test` ohne Xcode) und als
+Framework-Target innerhalb des generierten Xcode-Projekts (`project.yml`,
+kompiliert aus denselben Quellen in `Sources/IntentionCore`). Xcode bindet
+das Package selbst nicht ein — das vermeidet die SourceKit-Indexierungsprobleme,
+die lokale SwiftPM-Pakete in Xcode gelegentlich verursachen. Das
+Framework-Target ist bewusst **statisch** (`MACH_O_TYPE: staticlib`), weil es
+sowohl von `Punkt` als auch von `PunktWidgetExtension` gelinkt wird — als
+dynamisches Framework müssten beide es einbetten, was zu "multiple commands
+produce ...framework"-Fehlern führt.
 
 `SessionEngine` (Sources/IntentionCore/Engine/SessionEngine.swift) kennt
 weder SwiftUI noch Notifications noch Haptik — es ist die testbare,
@@ -62,8 +76,9 @@ xcodegen generate
 open Punkt.xcodeproj
 ```
 
-`project.yml` erzeugt zwei Targets (`Punkt`, `PunktWidgetExtension`) plus
-das lokale Package `IntentionCore` als Abhängigkeit beider Targets.
+`project.yml` erzeugt vier Targets: `IntentionCore` (Framework, aus
+`Sources/IntentionCore`), `IntentionCoreTests` (Unit-Tests, im Xcode
+Test-Navigator sichtbar), `Punkt` (App) und `PunktWidgetExtension`.
 
 ### Vor dem ersten Build in Xcode anpassen
 
@@ -92,12 +107,14 @@ das lokale Package `IntentionCore` als Abhängigkeit beider Targets.
 
 ### Kern-Tests ausführen
 
-`IntentionCore` ist ein reines SwiftPM-Package und lässt sich unabhängig
-vom Xcode-Projekt testen:
+Zwei gleichwertige Wege:
 
-```bash
-swift test
-```
+- **In Xcode:** ⌘U im `Punkt`-Scheme läuft `IntentionCoreTests` gegen das
+  generierte Framework-Target.
+- **Terminal, unabhängig vom Xcode-Projekt:**
+  ```bash
+  swift test
+  ```
 
 (Erfordert eine Apple-Plattform, da `SwiftData` und `ActivityKit`
 plattformspezifisch sind — nicht unter Linux.)
