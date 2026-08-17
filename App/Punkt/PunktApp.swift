@@ -7,10 +7,11 @@ import IntentionCore
 struct PunktApp: App {
     private let modelContainer: ModelContainer
     @State private var sessionStore: SessionStore
+    @State private var flowSessionStore: FlowSessionStore
     private let notificationDelegate: NotificationDelegate
 
     init() {
-        let schema = Schema([Session.self, CheckIn.self, Detour.self])
+        let schema = Schema([Session.self, CheckIn.self, Detour.self, FlowSession.self])
         let configuration: ModelConfiguration
         if let groupURL = AppGroup.modelStoreURL {
             configuration = ModelConfiguration(schema: schema, url: groupURL)
@@ -32,6 +33,8 @@ struct PunktApp: App {
         self._sessionStore = State(wrappedValue: store)
         SessionStoreHolder.shared = store
 
+        self._flowSessionStore = State(wrappedValue: FlowSessionStore(modelContext: container.mainContext))
+
         let delegate = NotificationDelegate(sessionStore: store)
         self.notificationDelegate = delegate
         UNUserNotificationCenter.current().delegate = delegate
@@ -47,6 +50,7 @@ struct PunktApp: App {
         WindowGroup {
             RootView()
                 .environment(sessionStore)
+                .environment(flowSessionStore)
                 .modelContainer(modelContainer)
                 .preferredColorScheme(.dark)
         }

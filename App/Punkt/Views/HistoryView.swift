@@ -12,6 +12,13 @@ struct HistoryView: View {
     )
     private var sessions: [Session]
 
+    @Query(
+        filter: #Predicate<FlowSession> { $0.endedAt != nil },
+        sort: \FlowSession.startedAt,
+        order: .reverse
+    )
+    private var flowSessions: [FlowSession]
+
     private let analyzer = PatternAnalyzer()
 
     var body: some View {
@@ -19,26 +26,76 @@ struct HistoryView: View {
             ZStack {
                 PunktPalette.background.ignoresSafeArea()
 
-                if sessions.isEmpty {
+                if sessions.isEmpty && flowSessions.isEmpty {
                     ContentUnavailableView(
                         "Noch kein Verlauf",
                         systemImage: "circle.dashed",
                         description: Text("Abgeschlossene Sessions erscheinen hier.")
                     )
                 } else {
-                    List(sessions) { session in
-                        DisclosureGroup {
-                            SessionTimelineView(session: session)
-                        } label: {
-                            SessionRow(session: session, coherence: analyzer.coherenceRatio(for: session))
+                    List {
+                        if !sessions.isEmpty {
+                            Section("Intentionen") {
+                                ForEach(sessions) { session in
+                                    DisclosureGroup {
+                                        SessionTimelineView(session: session)
+                                    } label: {
+                                        SessionRow(session: session, coherence: analyzer.coherenceRatio(for: session))
+                                    }
+                                    .listRowBackground(Color.white.opacity(0.04))
+                                }
+                            }
                         }
-                        .listRowBackground(Color.white.opacity(0.04))
+
+                        if !flowSessions.isEmpty {
+                            Section("Flow") {
+                                ForEach(flowSessions) { flowSession in
+                                    FlowSessionRow(session: flowSession)
+                                        .listRowBackground(Color.white.opacity(0.04))
+                                }
+                            }
+                        }
                     }
                     .scrollContentBackground(.hidden)
                 }
             }
             .navigationTitle("Verlauf")
         }
+    }
+}
+
+private struct FlowSessionRow: View {
+    let session: FlowSession
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(session.startedAt, style: .date)
+                Text("·")
+                Text(rampText)
+                Text("·")
+                Text(flowText)
+            }
+            .font(.caption)
+            .foregroundStyle(PunktPalette.textSecondary)
+
+            if session.skippedRamp {
+                Text("Anlauf übersprungen")
+                    .font(.caption2)
+                    .foregroundStyle(PunktFlowPalette.ramp)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var rampText: String {
+        guard let ramp = session.actualRampDuration else { return "Anlauf —" }
+        return "Anlauf \(Int(ramp) / 60) min"
+    }
+
+    private var flowText: String {
+        guard let flow = session.flowDuration else { return "Flow —" }
+        return "Flow \(Int(flow) / 60) min"
     }
 }
 
