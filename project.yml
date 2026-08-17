@@ -20,6 +20,9 @@ targets:
     platform: iOS
     sources:
       - path: Sources/IntentionCore
+    info:
+      path: Sources/IntentionCore/Resources/Info.plist
+      properties: {}
     settings:
       base:
         # Shared by both the app and the widget extension — built static so
@@ -27,7 +30,7 @@ targets:
         # commands produce ...framework" duplicate-embed error you get when
         # an app and its extension both embed the same dynamic framework.
         MACH_O_TYPE: staticlib
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: "NO"
 
   IntentionCoreTests:
     type: bundle.unit-test
@@ -36,9 +39,12 @@ targets:
       - path: Tests/IntentionCoreTests
     dependencies:
       - target: IntentionCore
+    info:
+      path: Tests/IntentionCoreTests/Resources/Info.plist
+      properties: {}
     settings:
       base:
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: "NO"
 
   Punkt:
     type: application
