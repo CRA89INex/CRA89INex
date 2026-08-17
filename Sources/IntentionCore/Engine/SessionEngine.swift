@@ -187,7 +187,8 @@ public final class SessionEngine {
     // MARK: Internals
 
     private func scheduleNextCheckIn() {
-        guard var policy = intervalPolicy, let session = currentSession else { return }
+        guard let session = currentSession else { return }
+        guard var policy = intervalPolicy else { return }
         let sampled = policy.nextInterval(sample: intervalSample)
         intervalPolicy = policy
 
