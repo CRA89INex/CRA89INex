@@ -56,10 +56,16 @@ enum SessionStoreHolder {
 
 struct PunktShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
+        // `intentionText` is a plain String parameter, and Siri phrases can
+        // only embed parameters that conform to AppEntity or AppEnum (it
+        // needs a structured, enumerable value to parse from speech) — so
+        // the free-text intention isn't part of the phrase itself. Siri
+        // still prompts for it via `requestValueDialog`/the parameter's
+        // own dialog after the phrase is matched.
         AppShortcut(
             intent: StartIntentionIntent(),
             phrases: [
-                "Ich mache jetzt \(\.$intentionText) in \(.applicationName)",
+                "Ich mache jetzt eine Intention in \(.applicationName)",
                 "Starte eine Intention in \(.applicationName)"
             ],
             shortTitle: "Intention starten",
