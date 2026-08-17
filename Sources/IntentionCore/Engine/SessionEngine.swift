@@ -188,9 +188,8 @@ public final class SessionEngine {
 
     private func scheduleNextCheckIn() {
         guard let session = currentSession else { return }
-        guard var policy = intervalPolicy else { return }
+        guard let policy = intervalPolicy else { return }
         let sampled = policy.nextInterval(sample: intervalSample)
-        intervalPolicy = policy
 
         let due: Date
         if session.checkIns.isEmpty {
