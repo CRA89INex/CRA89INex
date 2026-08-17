@@ -14,22 +14,22 @@ struct TutorialView: View {
         TutorialPage(
             color: PunktPalette.active,
             title: "Die Idee",
-            body: "Du erklärst, was du jetzt tun willst. Die Zeit läuft sichtbar. In unregelmäßigen Abständen fragt Punkt kurz: „Bist du noch dabei?" Kein Blockieren, keine Bewertung — nur freundliches Bewusstmachen."
-        ),
-        TutorialPage(
-            color: PunktPalette.active,
-            title: "Vertiefung",
-            body: "Seltene Check-ins, etwa alle 20–40 Minuten. Für Tätigkeiten, die ungestörten Fokus brauchen — der Flow hat Vorrang vor der Nachfrage."
-        ),
-        TutorialPage(
-            color: PunktPalette.checkIn,
-            title: "Wachheit",
-            body: "Häufigere Check-ins, etwa alle 6–12 Minuten. Für Tätigkeiten, bei denen du erfahrungsgemäß leicht abschweifst und ein kurzer Anstoß hilft."
+            body: "Du erklärst, was du jetzt tun willst. Die Zeit läuft sichtbar. In unregelmäßigen Abständen fragt Punkt kurz: Bist du noch dabei? Kein Blockieren, keine Bewertung — nur freundliches Bewusstmachen."
         ),
         TutorialPage(
             color: PunktFlowPalette.ramp,
             title: "Flow",
-            body: "Kein Check-in-Modus. Erst ein kurzer Anlauf zum Ankommen, dann offene Flow-Zeit, die du selbst beendest, wenn du fertig bist."
+            body: "Einstieg und offenes Weiterarbeiten. Erst ein kurzer Anlauf zum Ankommen, dann offene Flow-Zeit, die du selbst beendest. Tipp: Flow funktioniert oft am besten früh morgens, wenn du gleich dranbleibst."
+        ),
+        TutorialPage(
+            color: PunktPalette.active,
+            title: "Fokus",
+            body: "Ein konzentrierter Arbeitsblock von bis zu 90 Minuten. Check-ins nach 25 und 40 Minuten, dazu ein kurzer Hinweis 5 Minuten vor Ende."
+        ),
+        TutorialPage(
+            color: PunktPalette.checkIn,
+            title: "Anker",
+            body: "Ziel: Dranbleiben. Kurze, sanfte Check-ins helfen dir, immer wieder zu deiner Aufgabe zurückzukehren — den Rhythmus (3–12 Minuten) bestimmst du selbst. Tipp: Wenn du dich beim Abschweifen erwischst, lass ein Gummiband sanft ans Handgelenk schnalzen, als kleinen Impuls, nicht um dir wehzutun."
         )
     ]
 

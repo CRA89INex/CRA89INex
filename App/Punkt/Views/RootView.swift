@@ -31,10 +31,22 @@ struct RootView: View {
                 .tabItem { Label("Einstellungen", systemImage: "gearshape") }
         }
         .tint(PunktPalette.active)
-        .onAppear { refreshAfterForeground() }
+        .onAppear {
+            refreshAfterForeground()
+            if !hasSeenTutorial { showingTutorial = true }
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 refreshAfterForeground()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showTutorial)) { _ in
+            showingTutorial = true
+        }
+        .fullScreenCover(isPresented: $showingTutorial) {
+            TutorialView {
+                hasSeenTutorial = true
+                showingTutorial = false
             }
         }
     }

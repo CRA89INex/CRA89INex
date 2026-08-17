@@ -13,7 +13,7 @@ struct StartIntentionIntent: AppIntent {
     @Parameter(title: "Intention")
     var intentionText: String
 
-    @Parameter(title: "Modus", default: .vertiefung)
+    @Parameter(title: "Modus", default: .fokus)
     var mode: IntentSessionMode
 
     @MainActor
@@ -29,19 +29,19 @@ struct StartIntentionIntent: AppIntent {
 /// `SessionMode` isn't itself an `AppEnum` (it lives in the platform-agnostic
 /// core); this is the thin App Intents-facing mirror.
 enum IntentSessionMode: String, AppEnum {
-    case vertiefung
-    case wachheit
+    case fokus
+    case anker
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Modus"
     static var caseDisplayRepresentations: [IntentSessionMode: DisplayRepresentation] = [
-        .vertiefung: "Vertiefung",
-        .wachheit: "Wachheit"
+        .fokus: "Fokus",
+        .anker: "Anker"
     ]
 
     var sessionMode: SessionMode {
         switch self {
-        case .vertiefung: return .vertiefung
-        case .wachheit: return .wachheit
+        case .fokus: return .fokus
+        case .anker: return .anker
         }
     }
 }

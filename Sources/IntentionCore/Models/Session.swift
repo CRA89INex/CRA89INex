@@ -42,7 +42,7 @@ public final class Session {
     }
 
     public var mode: SessionMode {
-        get { SessionMode(rawValue: modeRawValue) ?? .vertiefung }
+        get { SessionMode(rawValue: modeRawValue) ?? .fokus }
         set { modeRawValue = newValue.rawValue }
     }
 

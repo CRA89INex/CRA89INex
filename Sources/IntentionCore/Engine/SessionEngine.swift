@@ -17,6 +17,12 @@ public final class SessionEngine {
         case returnPrompt
     }
 
+    /// Fokus's fixed check-in schedule: offsets from session start.
+    /// The "5 min before end" notice at the 90-minute mark is deliberately
+    /// not here — it's informational, not a check-in, and is scheduled by
+    /// the app layer instead (see `SessionStore`).
+    public static let fokusCheckInOffsets: [TimeInterval] = [25 * 60, 40 * 60]
+
     // MARK: State
 
     public private(set) var phase: Phase = .idle
@@ -32,7 +38,11 @@ public final class SessionEngine {
     public let gracePeriod: TimeInterval
     public let maxMissedCheckIns: Int
     private var intervalSample: (ClosedRange<TimeInterval>) -> TimeInterval
+    /// Anker-only; `nil` for Fokus sessions, which use `fokusCheckInOffsets` instead.
     private var intervalPolicy: CheckInIntervalPolicy?
+    /// Remembers the last chosen Anker pace so `chooseNewIntention` can
+    /// carry it forward when it isn't respecified.
+    private var lastAnkerIntervalMinutes: TimeInterval = 6
 
     // MARK: Side-effect hooks (set by the app layer)
 
@@ -56,12 +66,22 @@ public final class SessionEngine {
 
     // MARK: Starting
 
+    /// `ankerIntervalMinutes` (3–12) only matters for `.anker`; ignored for `.fokus`.
     @discardableResult
-    public func startSession(intentionText: String, mode: SessionMode) -> Session {
+    public func startSession(intentionText: String, mode: SessionMode, ankerIntervalMinutes: TimeInterval? = nil) -> Session {
         let trimmed = intentionText.trimmingCharacters(in: .whitespacesAndNewlines)
         let session = Session(intentionText: trimmed, startedAt: clock.now(), mode: mode)
         currentSession = session
-        intervalPolicy = CheckInIntervalPolicy(mode: mode)
+
+        switch mode {
+        case .anker:
+            let minutes = ankerIntervalMinutes ?? lastAnkerIntervalMinutes
+            lastAnkerIntervalMinutes = minutes
+            intervalPolicy = CheckInIntervalPolicy(baseRange: CheckInIntervalPolicy.aroundChosenPace(minutes))
+        case .fokus:
+            intervalPolicy = nil
+        }
+
         missedCheckInStreak = 0
         setPhase(.active)
         scheduleNextCheckIn()
@@ -140,15 +160,15 @@ public final class SessionEngine {
         setPhase(.detour)
     }
 
-    public func chooseNewIntention(_ text: String, mode: SessionMode? = nil) {
+    public func chooseNewIntention(_ text: String, mode: SessionMode? = nil, ankerIntervalMinutes: TimeInterval? = nil) {
         guard phase == .correction || phase == .returnPrompt else { return }
-        let priorMode = mode ?? currentSession?.mode ?? .vertiefung
+        let priorMode = mode ?? currentSession?.mode ?? .fokus
         if phase == .returnPrompt, let detour = currentDetour {
             detour.endedAt = clock.now()
             detour.returned = false
         }
         _ = closeCurrentSession(automatically: false)
-        startSession(intentionText: text, mode: priorMode)
+        startSession(intentionText: text, mode: priorMode, ankerIntervalMinutes: ankerIntervalMinutes)
     }
 
     @discardableResult
@@ -188,6 +208,16 @@ public final class SessionEngine {
 
     private func scheduleNextCheckIn() {
         guard let session = currentSession else { return }
+
+        switch session.mode {
+        case .anker:
+            scheduleNextAdaptiveCheckIn(for: session)
+        case .fokus:
+            scheduleNextFixedCheckIn(for: session)
+        }
+    }
+
+    private func scheduleNextAdaptiveCheckIn(for session: Session) {
         guard let policy = intervalPolicy else { return }
         let sampled = policy.nextInterval(sample: intervalSample)
 
@@ -199,6 +229,22 @@ public final class SessionEngine {
         } else {
             due = clock.now().addingTimeInterval(sampled)
         }
+        nextCheckInDue = due
+        onScheduleCheckIn?(due)
+    }
+
+    /// Fokus has exactly two fixed check-ins (25min, 40min from start); after
+    /// that, no more get scheduled. The count of check-ins already logged
+    /// for this session (`session.checkIns.count`) is the source of truth
+    /// for which one comes next, so this stays correct across correction/
+    /// detour detours that don't themselves add a `CheckIn`.
+    private func scheduleNextFixedCheckIn(for session: Session) {
+        let index = session.checkIns.count
+        guard index < Self.fokusCheckInOffsets.count else {
+            nextCheckInDue = nil
+            return
+        }
+        let due = session.startedAt.addingTimeInterval(Self.fokusCheckInOffsets[index])
         nextCheckInDue = due
         onScheduleCheckIn?(due)
     }
