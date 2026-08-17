@@ -1,11 +1,20 @@
 import SwiftUI
 import IntentionCore
 
+extension Notification.Name {
+    /// Posted by `SettingsView`'s "Wie funktioniert's?" button so `RootView`
+    /// (which owns the tutorial's presentation state) can reopen it from a
+    /// different tab.
+    static let showTutorial = Notification.Name("showTutorial")
+}
+
 /// The app is deliberately thin (§5.3): four screens, no more.
 struct RootView: View {
     @Environment(SessionStore.self) private var store
     @Environment(FlowSessionStore.self) private var flowStore
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
+    @State private var showingTutorial = false
 
     var body: some View {
         TabView {

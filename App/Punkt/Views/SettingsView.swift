@@ -15,6 +15,12 @@ struct SettingsView: View {
                 PunktPalette.background.ignoresSafeArea()
 
                 List {
+                    Section {
+                        Button("Wie funktioniert's?") {
+                            NotificationCenter.default.post(name: .showTutorial, object: nil)
+                        }
+                    }
+
                     Section("Standard-Modus") {
                         Picker("Modus", selection: $defaultModeRawValue) {
                             Text("Vertiefung").tag(SessionMode.vertiefung.rawValue)
