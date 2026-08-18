@@ -9,7 +9,7 @@ final class PatternAnalyzerTests: XCTestCase {
         detours: [(planned: TimeInterval, actual: TimeInterval, returned: Bool)] = [],
         duration: TimeInterval = 3600
     ) -> Session {
-        let session = Session(intentionText: "Test", startedAt: start, mode: .vertiefung)
+        let session = Session(intentionText: "Test", startedAt: start, mode: .fokus)
         session.endedAt = start.addingTimeInterval(duration)
         for spec in detours {
             let detour = Detour(reason: "x", plannedDuration: spec.planned, startedAt: start)
@@ -66,7 +66,7 @@ final class PatternAnalyzerTests: XCTestCase {
     }
 
     func testDriftMapOnlyIncludesNoAnswersWithFreelyGivenText() {
-        let session = Session(intentionText: "Test", startedAt: start, mode: .wachheit)
+        let session = Session(intentionText: "Test", startedAt: start, mode: .anker)
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
 

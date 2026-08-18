@@ -15,6 +15,11 @@ public enum NotificationIdentifiers {
     public static let returnExtendAction = "RETURN_EXTEND"
 
     public static let checkInInfoKey = "checkInIdentifier"
+
+    /// Fixed (not per-instance) since Fokus has at most one windup notice
+    /// pending at a time — scheduling again with this identifier just
+    /// replaces whatever was there.
+    public static let fokusWindupIdentifier = "FOKUS_WINDUP"
 }
 
 /// Schedules the local notifications that make check-ins and return
@@ -95,6 +100,18 @@ public struct NotificationScheduler {
         content.sound = nil
 
         await schedule(identifier: identifier, content: content, fireDate: fireDate)
+    }
+
+    /// Fokus's "5 min before end" heads-up (§ Anker/Fokus redesign) — purely
+    /// informational, no actions, no response expected.
+    public func scheduleFokusWindup(fireDate: Date) async {
+        let content = UNMutableNotificationContent()
+        content.title = "Noch 5 Minuten"
+        content.body = "Dein Fokus-Block geht bald zu Ende."
+        content.interruptionLevel = .timeSensitive
+        content.sound = nil
+
+        await schedule(identifier: NotificationIdentifiers.fokusWindupIdentifier, content: content, fireDate: fireDate)
     }
 
     public func cancelPending(identifiers: [String]) {

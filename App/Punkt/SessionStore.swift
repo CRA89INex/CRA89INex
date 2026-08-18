@@ -30,6 +30,11 @@ final class SessionStore {
     /// "unanswered" (§7). Kept short: the point is a glance, not a task.
     private let checkInResponseWindow: TimeInterval = 5 * 60
 
+    /// Fokus's "5 min before end" notice fires at the 85-minute mark of a
+    /// 90-minute block. It's informational only — not a check-in, no
+    /// yes/no — so it's scheduled here rather than through the engine.
+    private static let fokusWindupOffset: TimeInterval = 85 * 60
+
     init(
         modelContext: ModelContext,
         notificationScheduler: NotificationScheduler = NotificationScheduler(),
@@ -45,9 +50,9 @@ final class SessionStore {
 
     // MARK: User-facing actions
 
-    func startSession(intentionText: String, mode: SessionMode) {
+    func startSession(intentionText: String, mode: SessionMode, ankerIntervalMinutes: TimeInterval? = nil) {
         guard !intentionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        engine.startSession(intentionText: intentionText, mode: mode)
+        engine.startSession(intentionText: intentionText, mode: mode, ankerIntervalMinutes: ankerIntervalMinutes)
         rememberIntention(intentionText)
     }
 
@@ -145,6 +150,9 @@ final class SessionStore {
             checkInWaitTask?.cancel()
             liveActivityController.end()
         }
+        if phase == .active {
+            scheduleFokusWindupIfNeeded()
+        }
         publishSnapshot()
     }
 
@@ -155,7 +163,20 @@ final class SessionStore {
             liveActivityController.start(session: session)
         }
         try? modelContext.save()
+        scheduleFokusWindupIfNeeded()
         publishSnapshot()
+    }
+
+    /// Re-scheduled every time we're back in `.active` (each phase change
+    /// out of check-in cancels all pending notifications, so this has to
+    /// be re-added rather than scheduled just once at session start).
+    private func scheduleFokusWindupIfNeeded() {
+        guard phase == .active, let session, session.mode == .fokus else { return }
+        let windupDate = session.startedAt.addingTimeInterval(Self.fokusWindupOffset)
+        guard windupDate > .now else { return }
+        Task {
+            await notificationScheduler.scheduleFokusWindup(fireDate: windupDate)
+        }
     }
 
     private func handleSessionEnded(_ session: Session) {

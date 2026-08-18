@@ -24,7 +24,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testStartSessionEntersActivePhaseAndSchedulesCheckIn() {
         let (engine, _) = makeEngine()
-        let session = engine.startSession(intentionText: "  Hörbuch hören  ", mode: .wachheit)
+        let session = engine.startSession(intentionText: "  Hörbuch hören  ", mode: .anker)
 
         XCTAssertEqual(engine.phase, .active)
         XCTAssertEqual(session.intentionText, "Hörbuch hören", "should be trimmed")
@@ -35,10 +35,10 @@ final class SessionEngineTests: XCTestCase {
 
     func testGracePeriodFloorsTheFirstCheckIn() {
         let clock = TestClock()
-        // wachheit's minimum band interval (6 min) is shorter than the
+        // Anker's default 6-minute pace is shorter than the
         // 10 minute grace period, so the floor must win for check-in #1.
         let (engine, _) = makeEngine(clock: clock, fixedInterval: 6 * 60)
-        engine.startSession(intentionText: "Lesen", mode: .wachheit)
+        engine.startSession(intentionText: "Lesen", mode: .anker)
 
         let due = try! XCTUnwrap(engine.nextCheckInDue)
         XCTAssertEqual(due.timeIntervalSince(clock.now()), 10 * 60, accuracy: 0.001)
@@ -47,7 +47,7 @@ final class SessionEngineTests: XCTestCase {
     func testSecondCheckInIsNotSubjectToTheGracePeriod() {
         let clock = TestClock()
         let (engine, _) = makeEngine(clock: clock, fixedInterval: 6 * 60)
-        engine.startSession(intentionText: "Lesen", mode: .wachheit)
+        engine.startSession(intentionText: "Lesen", mode: .anker)
 
         clock.advance(by: 10 * 60)
         engine.checkInDue()
@@ -61,7 +61,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testCheckInDueCreatesPendingCheckInAndEntersCheckInPhase() {
         let (engine, _) = makeEngine()
-        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
 
         engine.checkInDue()
 
@@ -72,7 +72,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testAnsweringYesReturnsToActiveAndKeepsSessionRunning() {
         let (engine, _) = makeEngine()
-        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
         engine.checkInDue()
 
         engine.answerCheckIn(.yes)
@@ -85,7 +85,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testAnsweringNoEntersCorrectionAndRecordsOptionalActivityText() {
         let (engine, _) = makeEngine()
-        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
         engine.checkInDue()
 
         engine.answerCheckIn(.no, actualActivityText: "Instagram")
@@ -97,7 +97,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testAnsweringNoWithoutActivityTextIsAllowed() {
         let (engine, _) = makeEngine()
-        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
         engine.checkInDue()
 
         engine.answerCheckIn(.no)
@@ -110,7 +110,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testUnansweredCheckInsAreLoggedNotTreatedAsFailure() {
         let (engine, _) = makeEngine()
-        engine.startSession(intentionText: "Schreiben", mode: .vertiefung)
+        engine.startSession(intentionText: "Schreiben", mode: .anker)
         engine.checkInDue()
 
         engine.expirePendingCheckIn()
@@ -122,7 +122,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testThirdConsecutiveUnansweredCheckInPutsSessionToSleep() {
         let (engine, _) = makeEngine(maxMissedCheckIns: 3)
-        let session = engine.startSession(intentionText: "Schreiben", mode: .vertiefung)
+        let session = engine.startSession(intentionText: "Schreiben", mode: .anker)
 
         for _ in 0..<3 {
             engine.checkInDue()
@@ -137,7 +137,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testAYesAnswerResetsTheMissedCheckInStreak() {
         let (engine, _) = makeEngine(maxMissedCheckIns: 3)
-        engine.startSession(intentionText: "Schreiben", mode: .vertiefung)
+        engine.startSession(intentionText: "Schreiben", mode: .anker)
 
         engine.checkInDue()
         engine.expirePendingCheckIn()
@@ -154,7 +154,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testUserCanRequestCorrectionWithoutACheckIn() {
         let (engine, _) = makeEngine()
-        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
 
         engine.requestCorrection()
 
@@ -166,7 +166,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testChooseDetourEntersDetourPhaseAndRecordsIt() {
         let (engine, _) = makeEngine()
-        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
         engine.requestCorrection()
 
         engine.chooseDetour(reason: "Tür aufmachen", plannedDuration: 120)
@@ -179,7 +179,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testDetourCountdownExpiryEntersReturnPrompt() {
         let (engine, _) = makeEngine()
-        engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
         engine.requestCorrection()
         engine.chooseDetour(reason: "Tür", plannedDuration: 120)
 
@@ -190,7 +190,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testConfirmReturnClosesDetourAndResumesOriginalIntention() {
         let (engine, _) = makeEngine()
-        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
         engine.requestCorrection()
         engine.chooseDetour(reason: "Tür", plannedDuration: 120)
         let detour = try! XCTUnwrap(engine.currentDetour)
@@ -207,7 +207,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testEarlyReturnIsAllowedBeforeCountdownExpires() {
         let (engine, _) = makeEngine()
-        engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
         engine.requestCorrection()
         engine.chooseDetour(reason: "Tür", plannedDuration: 120)
 
@@ -219,7 +219,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testExtendDetourGoesBackToDetourPhaseWithExtensionRecorded() {
         let (engine, _) = makeEngine()
-        engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
         engine.requestCorrection()
         engine.chooseDetour(reason: "Tür", plannedDuration: 120)
         engine.detourCountdownExpired()
@@ -233,7 +233,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testNewIntentionFromReturnPromptMarksDetourAsNotReturned() {
         let (engine, _) = makeEngine()
-        let firstSession = engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        let firstSession = engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
         engine.requestCorrection()
         engine.chooseDetour(reason: "Tür", plannedDuration: 120)
         let detour = try! XCTUnwrap(engine.currentDetour)
@@ -252,7 +252,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testNewIntentionFromCorrectionClosesOldSessionAndKeepsMode() {
         let (engine, _) = makeEngine()
-        let oldSession = engine.startSession(intentionText: "Hörbuch hören", mode: .wachheit)
+        let oldSession = engine.startSession(intentionText: "Hörbuch hören", mode: .anker)
         engine.requestCorrection()
 
         engine.chooseNewIntention("Spazieren gehen")
@@ -261,13 +261,13 @@ final class SessionEngineTests: XCTestCase {
         XCTAssertNotNil(oldSession.endedAt)
         XCTAssertFalse(oldSession.endedAutomatically)
         XCTAssertEqual(newSession?.intentionText, "Spazieren gehen")
-        XCTAssertEqual(newSession?.mode, .wachheit)
+        XCTAssertEqual(newSession?.mode, .anker)
         XCTAssertEqual(engine.phase, .active)
     }
 
     func testEndSessionFromActiveClosesSessionAndReturnsToIdle() {
         let (engine, _) = makeEngine()
-        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
 
         engine.endSession(closingNote: "Fertig gehört")
 
@@ -280,7 +280,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testEndSessionFromCorrectionAlsoClosesSession() {
         let (engine, _) = makeEngine()
-        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        let session = engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
         engine.requestCorrection()
 
         engine.endSession()
@@ -299,7 +299,7 @@ final class SessionEngineTests: XCTestCase {
 
     func testChooseDetourOutsideCorrectionIsNoOp() {
         let (engine, _) = makeEngine()
-        engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
 
         engine.chooseDetour(reason: "Tür", plannedDuration: 120)
 
@@ -309,10 +309,78 @@ final class SessionEngineTests: XCTestCase {
 
     func testConfirmReturnWithoutADetourIsNoOp() {
         let (engine, _) = makeEngine()
-        engine.startSession(intentionText: "Hörbuch hören", mode: .vertiefung)
+        engine.startSession(intentionText: "Hörbuch hören", mode: .fokus)
 
         engine.confirmReturn()
 
         XCTAssertEqual(engine.phase, .active)
+    }
+
+    // MARK: Fokus's fixed 25/40 minute schedule
+
+    func testFokusFirstCheckInIsScheduledAtTwentyFiveMinutes() {
+        let clock = TestClock()
+        let (engine, _) = makeEngine(clock: clock)
+        let session = engine.startSession(intentionText: "Schreiben", mode: .fokus)
+
+        let due = try! XCTUnwrap(engine.nextCheckInDue)
+        XCTAssertEqual(due, session.startedAt.addingTimeInterval(25 * 60))
+    }
+
+    func testFokusSecondCheckInIsScheduledAtFortyMinutesFromStart() {
+        let clock = TestClock()
+        let (engine, _) = makeEngine(clock: clock)
+        let session = engine.startSession(intentionText: "Schreiben", mode: .fokus)
+
+        clock.advance(by: 25 * 60)
+        engine.checkInDue()
+        engine.answerCheckIn(.yes)
+
+        let due = try! XCTUnwrap(engine.nextCheckInDue)
+        XCTAssertEqual(due, session.startedAt.addingTimeInterval(40 * 60))
+    }
+
+    func testFokusSchedulesNoThirdCheckIn() {
+        let clock = TestClock()
+        let (engine, _) = makeEngine(clock: clock)
+        engine.startSession(intentionText: "Schreiben", mode: .fokus)
+
+        clock.advance(by: 25 * 60)
+        engine.checkInDue()
+        engine.answerCheckIn(.yes)
+        clock.advance(by: 15 * 60)
+        engine.checkInDue()
+        engine.answerCheckIn(.yes)
+
+        XCTAssertNil(engine.nextCheckInDue)
+    }
+
+    // MARK: Anker's user-adjustable pace
+
+    func testAnkerUsesTheChosenPaceForItsIntervalBand() {
+        let clock = TestClock()
+        let (engine, _) = makeEngine(clock: clock)
+        engine.startSession(intentionText: "Lesen", mode: .anker, ankerIntervalMinutes: 3)
+
+        clock.advance(by: 10 * 60) // past the grace period
+        engine.checkInDue()
+        engine.answerCheckIn(.yes)
+
+        let due = try! XCTUnwrap(engine.nextCheckInDue)
+        let expectedRange = CheckInIntervalPolicy.aroundChosenPace(3)
+        XCTAssertEqual(due.timeIntervalSince(clock.now()), expectedRange.lowerBound, accuracy: 0.001)
+    }
+
+    func testAnkerFallsBackToPreviousPaceWhenNotRespecified() {
+        let (engine, _) = makeEngine()
+        engine.startSession(intentionText: "Lesen", mode: .anker, ankerIntervalMinutes: 9)
+        engine.requestCorrection()
+
+        engine.chooseNewIntention("Aufräumen")
+
+        // No assertion on the exact interval here (private state) — this
+        // just verifies starting a new Anker session without specifying a
+        // pace doesn't crash and still produces a scheduled check-in.
+        XCTAssertNotNil(engine.nextCheckInDue)
     }
 }

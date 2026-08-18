@@ -1,25 +1,21 @@
 import SwiftUI
 import IntentionCore
 
-/// LEERLAUF (§4): "Was jetzt?" for the check-in modes (Vertiefung/Wachheit)
-/// — a single-line text field, up to five recent intentions as tappable
-/// suggestions, and dictation for when typing isn't practical. Flow mode
-/// is a third choice here but has its own shape entirely (no intention
-/// text, just a ramp duration) since it isn't a check-in session at all.
+/// LEERLAUF (§4): "Was jetzt?" for the check-in modes (Fokus/Anker) — a
+/// single-line text field, up to five recent intentions as tappable
+/// suggestions, and dictation for when typing isn't practical. Flow is a
+/// third choice here but has its own shape entirely (no intention text,
+/// just a ramp duration) since it isn't a check-in session at all.
 struct IntentionEntryView: View {
     @Environment(SessionStore.self) private var store
     @Environment(FlowSessionStore.self) private var flowStore
+    @AppStorage("defaultMode") private var defaultModeRawValue = EntryMode.fokus.rawValue
     @State private var text = ""
-    @State private var entryMode: EntryMode = .vertiefung
+    @State private var entryMode: EntryMode = .fokus
     @State private var rampMinutes: Double = 15
+    @State private var ankerIntervalMinutes: Double = 6
     @State private var dictation = DictationController()
     @FocusState private var fieldFocused: Bool
-
-    private enum EntryMode: Hashable {
-        case vertiefung
-        case wachheit
-        case flow
-    }
 
     var body: some View {
         ZStack {
@@ -32,18 +28,24 @@ struct IntentionEntryView: View {
 
                 VStack(spacing: 16) {
                     Picker("Modus", selection: $entryMode) {
-                        Text("Vertiefung").tag(EntryMode.vertiefung)
-                        Text("Wachheit").tag(EntryMode.wachheit)
-                        Text("Flow").tag(EntryMode.flow)
+                        ForEach(EntryMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal, 24)
-                    .accessibilityHint("Vertiefung: seltene Check-ins. Wachheit: häufigere Check-ins. Flow: Anlauf, dann offene Flow-Zeit ohne Check-ins.")
+                    .accessibilityHint("Flow: Anlauf, dann offene Flow-Zeit ohne Check-ins. Fokus: fester Arbeitsblock mit Check-ins nach 25 und 40 Minuten. Anker: häufige, einstellbare Check-ins.")
 
-                    if entryMode == .flow {
+                    switch entryMode {
+                    case .flow:
                         flowForm
-                    } else {
+                    case .fokus:
                         intentionForm
+                    case .anker:
+                        VStack(spacing: 16) {
+                            intentionForm
+                            ankerIntervalSlider
+                        }
                     }
                 }
 
@@ -69,14 +71,20 @@ struct IntentionEntryView: View {
                 Spacer()
             }
         }
-        .onAppear { fieldFocused = entryMode != .flow }
+        .onAppear {
+            entryMode = EntryMode(rawValue: defaultModeRawValue) ?? .fokus
+            fieldFocused = entryMode != .flow
+        }
         .onChange(of: entryMode) { _, newMode in
             fieldFocused = newMode != .flow
         }
     }
 
     private var dotColor: Color {
-        entryMode == .flow ? PunktFlowPalette.ramp.opacity(0.6) : PunktPalette.idle
+        switch entryMode {
+        case .flow: return PunktFlowPalette.ramp.opacity(0.6)
+        case .fokus, .anker: return PunktPalette.idle
+        }
     }
 
     private var intentionForm: some View {
@@ -102,6 +110,23 @@ struct IntentionEntryView: View {
         }
         .padding()
         .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal, 24)
+    }
+
+    private var ankerIntervalSlider: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Impuls alle")
+                    .font(.footnote)
+                    .foregroundStyle(PunktPalette.textSecondary)
+                Spacer()
+                Text("\(Int(ankerIntervalMinutes)) min")
+                    .font(.footnote.monospacedDigit())
+                    .foregroundStyle(PunktPalette.textPrimary)
+            }
+            Slider(value: $ankerIntervalMinutes, in: 3...12, step: 1)
+                .tint(PunktPalette.checkIn)
+        }
         .padding(.horizontal, 24)
     }
 
@@ -137,8 +162,12 @@ struct IntentionEntryView: View {
 
     private func startIntention() {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        let mode: SessionMode = entryMode == .wachheit ? .wachheit : .vertiefung
-        store.startSession(intentionText: text, mode: mode)
+        guard let mode = entryMode.sessionMode else { return }
+        store.startSession(
+            intentionText: text,
+            mode: mode,
+            ankerIntervalMinutes: mode == .anker ? ankerIntervalMinutes : nil
+        )
         text = ""
     }
 }

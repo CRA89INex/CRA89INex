@@ -6,7 +6,7 @@ import IntentionCore
 /// EINSTELLUNGEN (§5.3): everything the app can be adjusted by, without
 /// ever adding streaks, scores, or reminders about "missed" sessions.
 struct SettingsView: View {
-    @AppStorage("defaultMode") private var defaultModeRawValue = SessionMode.vertiefung.rawValue
+    @AppStorage("defaultMode") private var defaultModeRawValue = EntryMode.fokus.rawValue
     @State private var notificationsAuthorized: Bool?
 
     var body: some View {
@@ -23,8 +23,9 @@ struct SettingsView: View {
 
                     Section("Standard-Modus") {
                         Picker("Modus", selection: $defaultModeRawValue) {
-                            Text("Vertiefung").tag(SessionMode.vertiefung.rawValue)
-                            Text("Wachheit").tag(SessionMode.wachheit.rawValue)
+                            ForEach(EntryMode.allCases) { mode in
+                                Text(mode.title).tag(mode.rawValue)
+                            }
                         }
                         .pickerStyle(.segmented)
                     }

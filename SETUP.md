@@ -11,9 +11,9 @@ Die fünf offenen Punkte aus der Spezifikation wurden wie folgt entschieden:
 
 1. **App-Name:** *Punkt* — der Arbeitstitel folgt der zentralen visuellen
    Metapher (ein einzelner, atmender Kreis).
-2. **Check-in-Intervall:** `Wachheit` = 6–12 min, `Vertiefung` = 20–40 min
-   (`SessionMode.baseIntervalRange`), mit adaptiver Dämpfung/Verdichtung
-   über `CheckInIntervalPolicy`.
+2. **Drei Modi statt zwei:** Neben den beiden Check-in-Modi gibt es
+   inzwischen **Flow** als dritten, eigenständigen Modus ohne Check-ins —
+   siehe „Modi" unten.
 3. **Hauptuhr während des Exkurses:** läuft weiter (wie in der Spec
    vorgeschlagen) — `Session.totalDuration` schließt Exkurszeit ein,
    `PatternAnalyzer.coherenceRatio` zieht sie wieder ab. Genau diese
@@ -22,6 +22,23 @@ Die fünf offenen Punkte aus der Spezifikation wurden wie folgt entschieden:
    überspringbar (`CheckInPromptView`), nie Pflichtfeld.
 5. **Ausbleibende Rückkehr nach Exkurs:** wird nur protokolliert
    (`Detour.returned = false`), nie nachträglich erinnert oder bewertet.
+
+## Modi
+
+| Modus | Bedeutung | Mechanik |
+|---|---|---|
+| **Flow** | Einstieg und offenes Weiterarbeiten | Kein Check-in-Modus. Anlauf (5–30 min, wählbar) → offene Flow-Zeit, manuell beendet. Eigene Zustandsmaschine (`FlowSessionEngine`), kein `SessionMode`-Fall. |
+| **Fokus** | Konzentrierter Arbeitsblock, bis 90 Minuten | Fester Zeitplan statt Zufallsintervall: Check-ins nach 25 und 40 Minuten (`SessionEngine.fokusCheckInOffsets`), dazu ein rein informativer Hinweis 5 Minuten vor Ende (85-Minuten-Marke, `SessionStore.scheduleFokusWindupIfNeeded`) — keine Check-in-Antwort nötig, kein Zwangsende bei 90 Minuten. |
+| **Anker** | Häufige, sanfte Rückkehr — Ziel: Dranbleiben | Check-ins in einem vom Nutzer gewählten Rhythmus (3–12 min), adaptiv gedämpft/verdichtet über `CheckInIntervalPolicy` genau wie zuvor. Der gewählte Wert bestimmt die Mitte einer ±2-Minuten-Bandbreite (`CheckInIntervalPolicy.aroundChosenPace`). |
+
+`SessionMode` (IntentionCore) kennt nur noch `.fokus` und `.anker` — Flow
+lebt komplett außerhalb davon. Die App-seitige `EntryMode` (`App/Punkt/
+EntryMode.swift`) fasst alle drei fürs UI zusammen (Picker-Reihenfolge,
+Titel, Standard-Modus-Einstellung).
+
+Ein kurzes Tutorial (`TutorialView`, vier Karten: Idee → Flow → Fokus →
+Anker) erklärt das beim ersten Start automatisch und ist jederzeit über
+Einstellungen → „Wie funktioniert's?" wieder aufrufbar.
 
 ## Projektstruktur
 
