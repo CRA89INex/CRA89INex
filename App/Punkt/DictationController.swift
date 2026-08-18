@@ -40,18 +40,32 @@ final class DictationController {
     }
 
     private func beginRecording(with recognizer: SFSpeechRecognizer) {
+        let inputNode = audioEngine.inputNode
+        let format = inputNode.outputFormat(forBus: 0)
+
+        // The Simulator (and occasionally a device with no recording route
+        // available yet) can hand back a zero-channel/zero-sample-rate
+        // format here, which installTap crashes on rather than failing
+        // gracefully. Bail out instead — dictation just silently isn't
+        // available in that state; the keyboard still works.
+        guard format.channelCount > 0, format.sampleRate > 0 else { return }
+
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
         self.request = request
 
-        let inputNode = audioEngine.inputNode
-        let format = inputNode.outputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak request] buffer, _ in
             request?.append(buffer)
         }
 
         audioEngine.prepare()
-        try? audioEngine.start()
+        do {
+            try audioEngine.start()
+        } catch {
+            inputNode.removeTap(onBus: 0)
+            self.request = nil
+            return
+        }
         isRecording = true
 
         task = recognizer.recognitionTask(with: request) { [weak self] result, error in
