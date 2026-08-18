@@ -37,10 +37,15 @@ struct TutorialView: View {
         VStack(spacing: 0) {
             HStack {
                 Spacer()
-                Button("Überspringen") { onFinished() }
-                    .font(.footnote)
-                    .foregroundStyle(PunktPalette.textSecondary)
-                    .padding()
+                Button {
+                    onFinished()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(PunktPalette.textSecondary, PunktPalette.textSecondary.opacity(0.15))
+                }
+                .accessibilityLabel("Tutorial überspringen")
+                .padding()
             }
 
             TabView(selection: $page) {
